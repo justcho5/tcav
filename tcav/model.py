@@ -325,11 +325,27 @@ class PublicImageModelWrapper(ImageModelWrapper):
         'importing multiple instances of the model.') % scope
 
     # graph_def = tf.GraphDef.FromString(tf.gfile.Open("./frozen_model.pb", 'rb').read())
-    print(saved_path)
-    f = gfile.FastGFile("./frozen_model.pb", 'rb')
-    graph_def = tf.GraphDef()
-    graph_def.ParseFromString(f.read())
-    f.close()
+    # print(saved_path)
+    # f = gfile.FastGFile("./frozen_model.pb", 'rb')
+    # graph_def = tf.GraphDef()
+    # graph_def.ParseFromString(f.read())
+    # f.close()
+    #
+    input_graph_def = tf.GraphDef()
+    if model_path.endswith('.pb'):
+      tf.logging.info('Loading from frozen binary graph.')
+      with tf.gfile.FastGFile(model_path, 'rb') as f:
+        input_graph_def.ParseFromString(f.read())
+    else:
+      tf.logging.info('Loading from frozen text graph.')
+      with tf.gfile.FastGFile(model_path) as f:
+        text_format.Parse(f.read(), input_graph_def)
+    tf.import_graph_def(input_graph_def)
+    self.import_prefix = True
+
+
+
+
 
     with tf.name_scope(scope) as sc:
       t_input, t_prep_input = PublicImageModelWrapper.create_input(
