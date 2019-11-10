@@ -250,7 +250,10 @@ class PublicImageModelWrapper(ImageModelWrapper):
                endpoints_dict,
                scope):
     super(PublicImageModelWrapper, self).__init__(image_shape)
-    self.labels = tf.gfile.Open(labels_path).read().splitlines()
+    try:
+        self.labels = tf.gfile.Open(labels_path).read().splitlines()
+    except:
+        self.labels = ['negative','positive']
     self.ends = PublicImageModelWrapper.import_graph(model_fn_path,
                                                      endpoints_dict,
                                                      self.image_value_range,
@@ -356,10 +359,10 @@ class XceptionHPVWrapper(PublicImageModelWrapper):
 
         super(XceptionHPVWrapper, self).__init__(sess,model_saved_path,
                                                       image_shape_xc,
+                                                      labels_path,
                                                       endpoints_xc,
                                                       scope='import')
         self.model_name = 'Xception'
-        self.labels = ['negative', 'positive']
 
 
 class GoolgeNetWrapper_public(PublicImageModelWrapper):
