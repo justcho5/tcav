@@ -332,7 +332,7 @@ class PublicImageModelWrapper(ImageModelWrapper):
     # f.close()
     #
     input_graph_def = tf.GraphDef()
-    if model_path.endswith('.pb'):
+    if saved_path.endswith('.pb'):
       tf.logging.info('Loading from frozen binary graph.')
       with tf.gfile.FastGFile(saved_path, 'rb') as f:
         input_graph_def.ParseFromString(f.read())
