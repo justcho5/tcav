@@ -326,7 +326,7 @@ class PublicImageModelWrapper(ImageModelWrapper):
 
     # graph_def = tf.GraphDef.FromString(tf.gfile.Open(saved_path, 'rb').read())
     print(saved_path)
-    f = gfile.FastGFile(saved_path, 'rb')
+    f = gfile.GFile("./frozen_model.pb", 'rb')
     graph_def = tf.GraphDef()
     graph_def.ParseFromString(f.read())
     f.close()
