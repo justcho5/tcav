@@ -24,6 +24,7 @@ import numpy as np
 import six
 import tensorflow as tf
 from google.protobuf import text_format
+from tensorflow.python.platform import gfile
 
 class ModelWrapper(six.with_metaclass(ABCMeta, object)):
   """Simple wrapper of the for models with session object for TCAV.
@@ -256,6 +257,7 @@ class PublicImageModelWrapper(ImageModelWrapper):
                                                      scope=scope)
     self.bottlenecks_tensors = PublicImageModelWrapper.get_bottleneck_tensors(
         scope)
+    print("BOTTLENECK: {}".format(self.bottlenecks_tensors))
     graph = tf.get_default_graph()
 
     # Construct gradient ops.
@@ -297,14 +299,18 @@ class PublicImageModelWrapper(ImageModelWrapper):
   # From Alex's code.
   @staticmethod
   def get_bottleneck_tensors(scope):
-    """Add Inception bottlenecks and their pre-Relu versions to endpoints dict."""
-    graph = tf.get_default_graph()
-    bn_endpoints = {}
-    for op in graph.get_operations():
-      if op.name.startswith(scope+'/') and 'Concat' in op.type:
-        name = op.name.split('/')[1]
-        bn_endpoints[name] = op.outputs[0]
-    return bn_endpoints
+      """Add Inception bottlenecks and their pre-Relu versions to endpoints dict."""
+      graph = tf.get_default_graph()
+      bn_endpoints = {}
+      for op in graph.get_operations():
+          if op.name.startswith(scope+'/') and 'Concat' in op.type:
+              name = op.name.split('/')[1]
+              bn_endpoints[name] = op.outputs[0]
+          if op.name.startswith('import/xception_2/') and 'Add' in op.type:
+              splitname =op.name.split('/')
+              name = "{}/{}".format(splitname[2], splitname[3])
+              bn_endpoints[name] = op.outputs[0]
+      return bn_endpoints
 
   # Load graph and import into graph used by our session
   @staticmethod
@@ -315,7 +321,11 @@ class PublicImageModelWrapper(ImageModelWrapper):
         'Scope "%s" already exists. Provide explicit scope names when '
         'importing multiple instances of the model.') % scope
 
-    graph_def = tf.GraphDef.FromString(tf.gfile.Open(saved_path, 'rb').read())
+    # graph_def = tf.GraphDef.FromString(tf.gfile.Open(saved_path, 'rb').read())
+    f = gfile.FastGFile("./model/frozen_model.pb", 'rb')
+    graph_def = tf.GraphDef()
+    graph_def.ParseFromString(f.read())
+    f.close()
 
     with tf.name_scope(scope) as sc:
       t_input, t_prep_input = PublicImageModelWrapper.create_input(
@@ -328,6 +338,29 @@ class PublicImageModelWrapper(ImageModelWrapper):
       myendpoints = dict(list(zip(list(endpoints.keys()), myendpoints)))
       myendpoints['input'] = t_input
     return myendpoints
+
+class XceptionHPVWrapper(PublicImageModelWrapper):
+
+    def __init__(self, sess, model_saved_path, labels_path):
+
+
+        image_shape_xc = [598, 598, 3]
+        self.image_value_range = (-1, 1)
+        endpoints_xc = dict(
+            input='xception_input_2:0',
+            logit='dense_1_2/BiasAdd:0',
+            prediction='dense_1_2/Softmax:0',
+        )
+
+        self.sess = sess
+
+        super(XceptionHPVWrapper, self).__init__(sess,model_saved_path,
+                                                      labels_path,
+                                                      image_shape_xc,
+                                                      endpoints_xc,
+                                                      scope='import')
+        self.model_name = 'Xception'
+
 
 
 class GoolgeNetWrapper_public(PublicImageModelWrapper):
@@ -343,6 +376,7 @@ class GoolgeNetWrapper_public(PublicImageModelWrapper):
         logit_weight='softmax2_w:0',
         logit_bias='softmax2_b:0',
     )
+
     self.sess = sess
     super(GoolgeNetWrapper_public, self).__init__(sess,
                                                   model_saved_path,

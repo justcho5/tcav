@@ -52,11 +52,11 @@ class ActivationGeneratorBase(ActivationGeneratorInterface):
     return self.model
 
   @abstractmethod
-  def get_examples_for_concept(self, concept):
+  def get_examples_for_concept(self, concept, run_parallel):
     pass
 
   def get_activations_for_concept(self, concept, bottleneck):
-    examples = self.get_examples_for_concept(concept)
+    examples = self.get_examples_for_concept(concept, run_parallel)
     return self.get_activations_for_examples(examples, bottleneck)
 
   def get_activations_for_examples(self, examples, bottleneck):
@@ -108,12 +108,12 @@ class ImageActivationGenerator(ActivationGeneratorBase):
     super(ImageActivationGenerator, self).__init__(
         model, acts_dir, max_examples)
 
-  def get_examples_for_concept(self, concept):
+  def get_examples_for_concept(self, concept, run_parallel):
     concept_dir = os.path.join(self.source_dir, concept)
     img_paths = [os.path.join(concept_dir, d)
                  for d in tf.gfile.ListDirectory(concept_dir)]
     imgs = self.load_images_from_files(img_paths, self.max_examples,
-                                       shape=self.model.get_image_shape()[:2])
+                                       shape=self.model.get_image_shape()[:2], run_parallel=run_parallel)
     return imgs
 
   def load_image_from_file(self, filename, shape):

@@ -205,8 +205,10 @@ class TCAV(object):
     """
     # for random exp,  a machine with cpu = 30, ram = 300G, disk = 10G and
     # pool worker 50 seems to work.
+    self.run_parallel = run_parallel
     tf.logging.info('running %s params' % len(self.params))
     now = time.time()
+
     if run_parallel:
       pool = multiprocessing.Pool(num_workers)
       results = pool.map(lambda param: self._run_single_set(param, overwrite=overwrite), self.params)
@@ -244,6 +246,7 @@ class TCAV(object):
     tf.logging.info('running %s %s' % (target_class, concepts))
 
     # Get acts
+    print(concepts)
     acts = activation_generator.process_and_load_activations(
         [bottleneck], concepts + [target_class])
     # Get CAVs
@@ -271,11 +274,11 @@ class TCAV(object):
     i_up = self.compute_tcav_score(
         mymodel, target_class_for_compute_tcav_score, cav_concept,
         cav_instance, acts[target_class][cav_instance.bottleneck],
-        activation_generator.get_examples_for_concept(target_class))
+        activation_generator.get_examples_for_concept(target_class, run_parallel = self.run_parallel), run_parallel = self.run_parallel)
     val_directional_dirs = self.get_directional_dir(
         mymodel, target_class_for_compute_tcav_score, cav_concept,
         cav_instance, acts[target_class][cav_instance.bottleneck],
-        activation_generator.get_examples_for_concept(target_class))
+        activation_generator.get_examples_for_concept(target_class, run_parallel = self.run_parallel))
     result = {
         'cav_key':
             a_cav_key,
@@ -388,4 +391,5 @@ class TCAV(object):
               run_params.RunParams(bottleneck, concepts_in_test, target_in_test,
                                    self.activation_generator, self.cav_dir,
                                    alpha, self.mymodel))
+
     return params

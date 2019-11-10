@@ -3,4 +3,12 @@
 /*.egg-info
 .ipynb_checkpoints/
 build/
+*.DS_Store
 
+frozen_model.pb
+imagenet_comp_graph_label_strings.txt
+logs/
+model/
+source_dir/
+tcav/scrape_images.py
+tmp/
