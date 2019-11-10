@@ -19,7 +19,6 @@ import numpy as np
 import tensorflow as tf
 from tcav.tcav_results.results_pb2 import Result, Results
 import os
-from keras.models import load_model
 
 
 
@@ -52,11 +51,6 @@ def freeze_session(session, keep_var_names=None, output_names=None, clear_device
         frozen_graph = convert_variables_to_constants(session, input_graph_def,
                                                       output_names, freeze_var_names)
         return frozen_graph
-
-def get_pb(keras_model_path):
-    model = load_model(keras_model_path)
-    frozen_graph = freeze_session(K.get_session(),output_names=[out.op.name for out in model.outputs])
-    tf.train.write_graph(frozen_graph, "model", "hpv_xception.pb", as_text=False)
 
 _KEYS = [
     "cav_key", "cav_concept", "negative_concept", "target_class", "i_up",
