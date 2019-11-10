@@ -325,6 +325,7 @@ class PublicImageModelWrapper(ImageModelWrapper):
         'importing multiple instances of the model.') % scope
 
     # graph_def = tf.GraphDef.FromString(tf.gfile.Open(saved_path, 'rb').read())
+    print(saved_path)
     f = gfile.FastGFile(saved_path, 'rb')
     graph_def = tf.GraphDef()
     graph_def.ParseFromString(f.read())
