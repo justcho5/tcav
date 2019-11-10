@@ -324,12 +324,12 @@ class PublicImageModelWrapper(ImageModelWrapper):
         'Scope "%s" already exists. Provide explicit scope names when '
         'importing multiple instances of the model.') % scope
 
-    graph_def = tf.GraphDef.FromString(tf.gfile.Open("./frozen_model.pb", 'rb').read())
+    # graph_def = tf.GraphDef.FromString(tf.gfile.Open("./frozen_model.pb", 'rb').read())
     print(saved_path)
-    # f = gfile.FastGFile("./frozen_model.pb", 'rb')
-    # graph_def = tf.GraphDef()
-    # graph_def.ParseFromString(f.read())
-    # f.close()
+    f = gfile.FastGFile("./frozen_model.pb", 'rb')
+    graph_def = tf.GraphDef()
+    graph_def.ParseFromString(f.read())
+    f.close()
 
     with tf.name_scope(scope) as sc:
       t_input, t_prep_input = PublicImageModelWrapper.create_input(
