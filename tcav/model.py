@@ -222,11 +222,10 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
     Returns:
       Activations in the given layer.
     """
-    print("bottleneck tensors {}".format(self.bottlenecks_tensors[bottleneck_name]))
-    print("examples {}".format(examples))
 
-    return self.sess.run(self.bottlenecks_tensors[bottleneck_name],
-                         {self.ends['input']: examples})
+    return self.sess.run(self.bottlenecks_tensors[bottleneck_name], {self.ends['input']: examples})
+
+
 
 
 class ImageModelWrapper(ModelWrapper):
@@ -316,6 +315,10 @@ class PublicImageModelWrapper(ImageModelWrapper):
           if op.name.startswith('import/xception/') and 'Add' in op.type:
               splitname =op.name.split('/')
               name = "{}/{}".format(splitname[2], splitname[3])
+              bn_endpoints[name] = op.outputs[0]
+          if op.name.startswith('import/xception_2/') and 'Add' in op.type:
+              splitname =op.name.split('/')
+              name = "{}/{}".format(splitname[2], splitname[3])
               print(name)
               bn_endpoints[name] = op.outputs[0]
       return bn_endpoints
@@ -323,6 +326,7 @@ class PublicImageModelWrapper(ImageModelWrapper):
   # Load graph and import into graph used by our session
   @staticmethod
   def import_graph(saved_path, endpoints, image_value_range, scope='import'):
+
     t_input = tf.placeholder(np.float32, [None, None, None, 3])
     graph = tf.Graph()
     assert graph.unique_name(scope, False) == scope, (
@@ -345,14 +349,11 @@ class PublicImageModelWrapper(ImageModelWrapper):
       tf.logging.info('Loading from frozen text graph.')
       with tf.gfile.FastGFile(saved_path) as f:
         text_format.Parse(f.read(), graph_def)
-    tf.import_graph_def(graph_def)
+
+    tf.import_graph_def(graph_def, name="graphdef")
 
 
-    g = tf.get_default_graph()
-    for op in g.get_operations():
-        print("name {}".format(op.name))
-        print("value {}".format(op.values()))
-
+    
     with tf.name_scope(scope) as sc:
       t_input, t_prep_input = PublicImageModelWrapper.create_input(
           t_input, image_value_range)
@@ -372,10 +373,16 @@ class XceptionHPVWrapper(PublicImageModelWrapper):
 
         image_shape_xc = [598, 598, 3]
         self.image_value_range = (-1, 1)
+        # endpoints_xc = dict(
+        #     input='xception_input:0',
+        #     logit='dense_1/BiasAdd:0',
+        #     prediction='dense_1/Softmax:0',
+        # )
+        # local endpoints:
         endpoints_xc = dict(
-            input='xception_input:0',
-            logit='dense_1/BiasAdd:0',
-            prediction='dense_1/Softmax:0',
+            input='xception_input_2:0',
+            logit='dense_1_2/BiasAdd:0',
+            prediction='dense_1_2/Softmax:0',
         )
 
         self.sess = sess
