@@ -313,9 +313,10 @@ class PublicImageModelWrapper(ImageModelWrapper):
           if op.name.startswith(scope+'/') and 'Concat' in op.type:
               name = op.name.split('/')[1]
               bn_endpoints[name] = op.outputs[0]
-          if op.name.startswith('import/xception_1/') and 'Add' in op.type:
+          if op.name.startswith('import/xception/') and 'Add' in op.type:
               splitname =op.name.split('/')
               name = "{}/{}".format(splitname[2], splitname[3])
+              print(name)
               bn_endpoints[name] = op.outputs[0]
       return bn_endpoints
 
@@ -336,7 +337,7 @@ class PublicImageModelWrapper(ImageModelWrapper):
     # f.close()
     #
     graph_def = tf.GraphDef()
-    if saved_path.endswith('.pba'):
+    if saved_path.endswith('.pb'):
       tf.logging.info('Loading from frozen binary graph.')
       with tf.gfile.FastGFile(saved_path, 'rb') as f:
         graph_def.ParseFromString(f.read())
@@ -372,9 +373,9 @@ class XceptionHPVWrapper(PublicImageModelWrapper):
         image_shape_xc = [598, 598, 3]
         self.image_value_range = (-1, 1)
         endpoints_xc = dict(
-            input='xception_input_1:0',
-            logit='dense_1_1/BiasAdd:0',
-            prediction='dense_1_1/Softmax:0',
+            input='xception_input:0',
+            logit='dense_1/BiasAdd:0',
+            prediction='dense_1/Softmax:0',
         )
 
         self.sess = sess
