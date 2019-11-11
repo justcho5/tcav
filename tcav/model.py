@@ -253,6 +253,7 @@ class PublicImageModelWrapper(ImageModelWrapper):
                endpoints_dict,
                scope):
     super(PublicImageModelWrapper, self).__init__(image_shape)
+    print("IMAGESHAPE",image_shape)
     try:
         self.labels = tf.gfile.Open(labels_path).read().splitlines()
     except:
@@ -378,11 +379,7 @@ class XceptionHPVWrapper(PublicImageModelWrapper):
 
         self.sess = sess
 
-        super(XceptionHPVWrapper, self).__init__(sess,model_saved_path,
-                                                      image_shape_xc,
-                                                      labels_path,
-                                                      endpoints_xc,
-                                                      scope='import')
+        super(XceptionHPVWrapper, self).__init__(sess,model_saved_path,labels_path,image_shape_xc,endpoints_xc,scope='import')
         self.model_name = 'Xception'
 
 
