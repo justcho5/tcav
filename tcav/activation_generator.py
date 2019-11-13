@@ -32,7 +32,7 @@ class ActivationGeneratorInterface(six.with_metaclass(ABCMeta, object)):
   """Interface for an activation generator for a model"""
 
   @abstractmethod
-  def process_and_load_activations(self, bottleneck_names, concepts):
+  def process_and_load_activations(self, bottleneck_names, concepts, run_parallel):
     pass
 
   @abstractmethod
@@ -52,19 +52,21 @@ class ActivationGeneratorBase(ActivationGeneratorInterface):
     return self.model
 
   @abstractmethod
-  def get_examples_for_concept(self, concept):
+  def get_examples_for_concept(self, concept, run_parallel):
     pass
 
   def get_activations_for_concept(self, concept, bottleneck):
-    examples = self.get_examples_for_concept(concept)
+    examples = self.get_examples_for_concept(concept, self.run_parallel)
     return self.get_activations_for_examples(examples, bottleneck)
 
   def get_activations_for_examples(self, examples, bottleneck):
     acts = self.model.run_examples(examples, bottleneck)
     return self.model.reshape_activations(acts).squeeze()
 
-  def process_and_load_activations(self, bottleneck_names, concepts):
+  def process_and_load_activations(self, bottleneck_names, concepts, run_parallel):
+
     acts = {}
+    self.run_parallel = False
     if self.acts_dir and not tf.gfile.Exists(self.acts_dir):
       tf.gfile.MakeDirs(self.acts_dir)
 
@@ -108,12 +110,14 @@ class ImageActivationGenerator(ActivationGeneratorBase):
     super(ImageActivationGenerator, self).__init__(
         model, acts_dir, max_examples)
 
-  def get_examples_for_concept(self, concept):
+  def get_examples_for_concept(self, concept, run_parallel):
+
     concept_dir = os.path.join(self.source_dir, concept)
+    self.run_parallel=run_parallel
     img_paths = [os.path.join(concept_dir, d)
                  for d in tf.gfile.ListDirectory(concept_dir)]
     imgs = self.load_images_from_files(img_paths, self.max_examples,
-                                       shape=self.model.get_image_shape()[:2])
+                                       shape=self.model.get_image_shape()[:2], run_parallel=run_parallel)
     return imgs
 
   def load_image_from_file(self, filename, shape):

@@ -17,6 +17,9 @@ limitations under the License.
 from scipy.stats import ttest_ind
 import numpy as np
 import tensorflow as tf
+import sys
+sys.path.append("/Users/justina/Documents/EPFL/thesis/project/hnsc/histoXai/tcav/tcav")
+
 from tcav_results.results_pb2 import Result, Results
 
 _KEYS = [
@@ -25,6 +28,8 @@ _KEYS = [
     "val_directional_dirs_std", "note", "alpha", "bottleneck"
 ]
 
+def close_session(sess):
+    sess.close()
 
 def create_session(timeout=10000, interactive=True):
   """Create a tf session for the model.

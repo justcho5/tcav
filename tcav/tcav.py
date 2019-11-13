@@ -17,10 +17,12 @@ limitations under the License.
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+import sys
+sys.path.append("/Users/justina/Documents/EPFL/thesis/project/hnsc/histoXai/tcav/tcav")
 from multiprocessing import dummy as multiprocessing
 from six.moves import range
-from tcav.cav import CAV
-from tcav.cav import get_or_train_cav
+from cav import CAV
+from cav import get_or_train_cav
 from tcav import run_params
 from tcav import utils
 import numpy as np
@@ -203,6 +205,7 @@ class TCAV(object):
       results: an object (either a Results proto object or a list of
         dictionaries) containing metrics for TCAV results.
     """
+    self.run_parallel = run_parallel
     # for random exp,  a machine with cpu = 30, ram = 300G, disk = 10G and
     # pool worker 50 seems to work.
     tf.logging.info('running %s params' % len(self.params))
@@ -245,7 +248,7 @@ class TCAV(object):
 
     # Get acts
     acts = activation_generator.process_and_load_activations(
-        [bottleneck], concepts + [target_class])
+        [bottleneck], concepts + [target_class], run_parallel=self.run_parallel)
     # Get CAVs
     cav_hparams = CAV.default_hparams()
     cav_hparams.alpha = alpha
@@ -271,11 +274,11 @@ class TCAV(object):
     i_up = self.compute_tcav_score(
         mymodel, target_class_for_compute_tcav_score, cav_concept,
         cav_instance, acts[target_class][cav_instance.bottleneck],
-        activation_generator.get_examples_for_concept(target_class))
+        activation_generator.get_examples_for_concept(target_class, self.run_parallel), self.run_parallel)
     val_directional_dirs = self.get_directional_dir(
         mymodel, target_class_for_compute_tcav_score, cav_concept,
         cav_instance, acts[target_class][cav_instance.bottleneck],
-        activation_generator.get_examples_for_concept(target_class))
+        activation_generator.get_examples_for_concept(target_class, run_parallel=self.run_parallel))
     result = {
         'cav_key':
             a_cav_key,

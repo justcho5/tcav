@@ -20,11 +20,12 @@ from __future__ import print_function
 from scipy.stats import ttest_ind
 import numpy as np
 import matplotlib.pyplot as plt
+import tcav.utils as utils
 
 
 # helper function to output plot and write summary data
 def plot_results(results, random_counterpart=None, random_concepts=None, num_random_exp=100,
-    min_p_val=0.05):
+    min_p_val=0.05, output_file):
   """Helper function to organize results.
   When run in a notebook, outputs a matplotlib bar plot of the
   TCAV scores for all bottlenecks for each concept, replacing the
@@ -34,8 +35,8 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
 
   Args:
     results: dictionary of results from TCAV runs.
-    random_counterpart: name of the random_counterpart used, if it was used. 
-    random_concepts: list of random experiments that were run. 
+    random_counterpart: name of the random_counterpart used, if it was used.
+    random_concepts: list of random experiments that were run.
     num_random_exp: number of random experiments that were run.
     min_p_val: minimum p value for statistical significance
   """
@@ -44,7 +45,7 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
   def is_random_concept(concept):
     if random_counterpart:
       return random_counterpart == concept
-    
+
     elif random_concepts:
       return concept in random_concepts
 
@@ -57,33 +58,33 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
   # prepare data
   # dict with keys of concepts containing dict with bottlenecks
   result_summary = {}
-    
+
   # random
   random_i_ups = {}
-    
+
   for result in results:
     if result['cav_concept'] not in result_summary:
       result_summary[result['cav_concept']] = {}
-    
+
     if result['bottleneck'] not in result_summary[result['cav_concept']]:
       result_summary[result['cav_concept']][result['bottleneck']] = []
-    
+
     result_summary[result['cav_concept']][result['bottleneck']].append(result)
 
     # store random
     if is_random_concept(result['cav_concept']):
       if result['bottleneck'] not in random_i_ups:
         random_i_ups[result['bottleneck']] = []
-        
+
       random_i_ups[result['bottleneck']].append(result['i_up'])
-    
-  # to plot, must massage data again 
+
+  # to plot, must massage data again
   plot_data = {}
   plot_concepts = []
-    
+
   # print concepts and classes with indentation
   for concept in result_summary:
-        
+
     # if not random
     if not is_random_concept(concept):
       print(" ", "Concept =", concept)
@@ -91,10 +92,10 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
 
       for bottleneck in result_summary[concept]:
         i_ups = [item['i_up'] for item in result_summary[concept][bottleneck]]
-        
+
         # Calculate statistical significance
         _, p_val = ttest_ind(random_i_ups[bottleneck], i_ups)
-                  
+
         if bottleneck not in plot_data:
           plot_data[bottleneck] = {'bn_vals': [], 'bn_stds': [], 'significant': []}
 
@@ -103,7 +104,7 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
           plot_data[bottleneck]['bn_vals'].append(0.01)
           plot_data[bottleneck]['bn_stds'].append(0)
           plot_data[bottleneck]['significant'].append(False)
-            
+
         else:
           plot_data[bottleneck]['bn_vals'].append(np.mean(i_ups))
           plot_data[bottleneck]['bn_stds'].append(np.std(i_ups))
@@ -115,31 +116,31 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
             np.mean(random_i_ups[bottleneck]),
             np.std(random_i_ups[bottleneck]), p_val,
             "not significant" if p_val > min_p_val else "significant"))
-        
+
   # subtract number of random experiments
   if random_counterpart:
     num_concepts = len(result_summary) - 1
   elif random_concepts:
     num_concepts = len(result_summary) - len(random_concepts)
-  else: 
+  else:
     num_concepts = len(result_summary) - num_random_exp
-    
+
   num_bottlenecks = len(plot_data)
   bar_width = 0.35
-    
-  # create location for each bar. scale by an appropriate factor to ensure 
+
+  # create location for each bar. scale by an appropriate factor to ensure
   # the final plot doesn't have any parts overlapping
   index = np.arange(num_concepts) * bar_width * (num_bottlenecks + 1)
 
   # matplotlib
   fig, ax = plt.subplots()
-    
+
   # draw all bottlenecks individually
   for i, [bn, vals] in enumerate(plot_data.items()):
     bar = ax.bar(index + i * bar_width, vals['bn_vals'],
         bar_width, yerr=vals['bn_stds'], label=bn)
-    
-    # draw stars to mark bars that are stastically insignificant to 
+
+    # draw stars to mark bars that are stastically insignificant to
     # show them as different from others
     for j, significant in enumerate(vals['significant']):
       if not significant:
@@ -155,3 +156,7 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
   ax.legend()
   fig.tight_layout()
   plt.show()
+  out = "/Users/justina/Documents/EPFL/thesis/project/hnsc/histoXai/ace_small_test/results"
+  utils.make_dir_if_not_exists(out)
+  plt.savefig(os.path.join(out, output_file))
+  return plot_data

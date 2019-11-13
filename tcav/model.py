@@ -237,6 +237,10 @@ class ImageModelWrapper(ModelWrapper):
     """returns the shape of an input image."""
     return self.image_shape
 
+def _try_loading_model(self, model_path):
+    return super(ModelWrapper)._try_loading_model(model_path)
+
+
 
 class PublicImageModelWrapper(ImageModelWrapper):
   """Simple wrapper of the public image models with session object.
@@ -357,24 +361,87 @@ class GoolgeNetWrapper_public(PublicImageModelWrapper):
     # Following tfzoo convention.
     return pred_t[::16]
 
-class InceptionV3Wrapper_public(PublicImageModelWrapper):
-  def __init__(self, sess, model_saved_path, labels_path):
-    self.image_value_range = (-1, 1)
-    image_shape_v3 = [299, 299, 3]
-    endpoints_v3 = dict(
-        input='Mul:0',
-        logit='softmax/logits:0',
-        prediction='softmax:0',
-        pre_avgpool='mixed_10/join:0',
-        logit_weight='softmax/weights:0',
-        logit_bias='softmax/biases:0',
-    )
+# class InceptionV3Wrapper_public(PublicImageModelWrapper):
+#   def __init__(self, sess, model_saved_path, labels_path):
+#     self.image_value_range = (-1, 1)
+#     image_shape_v3 = [299, 299, 3]
+#     endpoints_v3 = dict(
+#         input='Mul:0',
+#         logit='softmax/logits:0',
+#         prediction='softmax:0',
+#         pre_avgpool='mixed_10/join:0',
+#         logit_weight='softmax/weights:0',
+#         logit_bias='softmax/biases:0',
+#     )
+#
+#     self.sess = sess
+#     super(InceptionV3Wrapper_public, self).__init__(sess,
+#                                                   model_saved_path,
+#                                                   labels_path,
+#                                                   image_shape_v3,
+#                                                   endpoints_v3,
+#                                                   scope='v3')
+#     self.model_name = 'InceptionV3_public'
 
-    self.sess = sess
-    super(InceptionV3Wrapper_public, self).__init__(sess,
-                                                  model_saved_path,
-                                                  labels_path,
-                                                  image_shape_v3,
-                                                  endpoints_v3,
-                                                  scope='v3')
-    self.model_name = 'InceptionV3_public'
+class InceptionV3Wrapper_public(ModelWrapper):
+    def __init__(self, sess, model_path, labels_path):
+        self.image_shape = [299,299,3]
+        self.model_name = 'InceptionV3_public'
+        super(InceptionV3Wrapper_public, self).__init__(model_path=model_path)
+
+        self.image_value_range = (-1,1)
+        endpoints_v3 = dict(input='input_3:0',
+        logit='predictions_2/BiasAdd:0',
+        prediction='predictions_2/Softmax:0',
+        pre_avgpool='mixed10_2/concat:0',
+        logit_weight='predictions_2/MatMul:0',
+        logit_bias='predictions_2/bias:0')
+
+        scope = 'import'
+        # graph = tf.get_default_graph()
+        bn_endpoints = {}
+        self.ends={}
+        for op in self.sess.graph.get_operations():
+            if op.name.startswith(scope+'/') and 'Concat' in op.type:
+              name = op.name.split('/')[1]
+              bn_endpoints[name] = op.outputs[0]
+        for k, v in endpoints_v3.items():
+            v="{}/{}".format(scope, v)
+            tensor = self.sess.graph.get_operation_by_name(v.strip(':0')).outputs[0]
+            if k == 'input' or k == 'prediction':
+                self.ends[k] = tensor
+
+        self.bottlenecks_tensors = bn_endpoints
+        graph = tf.get_default_graph()
+        with self.sess.graph.as_default():
+          self.y_input = tf.placeholder(tf.int64, shape=[None])
+
+          self.pred = tf.expand_dims(self.ends['prediction'][0], 0)
+          self.loss = tf.reduce_mean(
+              tf.nn.softmax_cross_entropy_with_logits(
+                  labels=tf.one_hot(
+                      self.y_input,
+                      self.ends['prediction'].get_shape().as_list()[1]),
+                  logits=self.pred))
+        self._make_gradient_tensors()
+        self.labels = tf.gfile.Open(labels_path).read().splitlines()
+    def get_image_shape(self):
+      """returns the shape of an input image."""
+      return self.image_shape
+    def id_to_label(self, idx):
+      return self.labels[idx]
+
+    def label_to_id(self, label):
+      return self.labels.index(label)
+
+
+    @staticmethod
+    def get_bottleneck_tensors(scope):
+      """Add Inception bottlenecks and their pre-Relu versions to endpoints dict."""
+      graph = tf.get_default_graph()
+      bn_endpoints = {}
+      for op in graph.get_operations():
+        if op.name.startswith(scope+'/') and 'Concat' in op.type:
+          name = op.name.split('/')[1]
+          bn_endpoints[name] = op.outputs[0]
+      return bn_endpoints
