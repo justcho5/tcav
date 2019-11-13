@@ -157,7 +157,7 @@ class ImageActivationGenerator(ActivationGeneratorBase):
   def load_images_from_files(self, filenames, max_imgs=500,
                              do_shuffle=True, run_parallel=True,
                              shape=(299, 299),
-                             num_workers=30):
+                             num_workers=20):
     """Return image arrays from filenames.
 
     Args:

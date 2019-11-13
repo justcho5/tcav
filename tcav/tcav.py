@@ -192,7 +192,7 @@ class TCAV(object):
     self.params = self.get_params()
     tf.logging.info('TCAV will %s params' % len(self.params))
 
-  def run(self, num_workers=10, run_parallel=False, overwrite=False, return_proto=False):
+  def run(self, num_workers=20, run_parallel=False, overwrite=False, return_proto=False):
     """Run TCAV for all parameters (concept and random), write results to html.
 
     Args:
