@@ -156,6 +156,6 @@ def plot_results(results, output_file, random_counterpart=None, random_concepts=
   ax.legend()
   fig.tight_layout()
   plt.show()
-  out = "/home/hjcho/projects/hnsc/histoXai/ace_small_test/results"
+  out = "/home/hjcho/projects/hnsc/histoXai/imagenet_small_test/results"
   plt.savefig(os.path.join(out, output_file))
   return plot_data
