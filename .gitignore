@@ -4,7 +4,17 @@
 .ipynb_checkpoints/
 build/
 *.DS_Store
+<<<<<<< HEAD
 logs/
 tcav/scrape_images.py
 tcav_imagenet_tutorial.ipynb
+=======
+
+frozen_model.pb
+imagenet_comp_graph_label_strings.txt
+logs/
+model/
+source_dir/
+tcav/scrape_images.py
+>>>>>>> f50c41e8ddfcb990d49a90cf7598c93994cc735b
 tmp/
