@@ -320,8 +320,12 @@ class CustomImageModelWrapper(ImageModelWrapper):
 
         graph_inputs = {}
         graph_inputs[endpoints['input']] = t_prep_input
+        "BEFORE"
+        print(graph_inputs)
+        print(list(endpoints.values()))
         myendpoints = tf.import_graph_def(
             input_graph_def, graph_inputs, list(endpoints.values()), name=sc)
+        "AFTER"
         myendpoints = dict(list(zip(list(endpoints.keys()), myendpoints)))
         myendpoints['input'] = t_input
       return myendpoints
