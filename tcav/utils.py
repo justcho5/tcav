@@ -18,9 +18,8 @@ from scipy.stats import ttest_ind
 import numpy as np
 import tensorflow as tf
 import sys
-sys.path.append("/Users/justina/Documents/EPFL/thesis/project/hnsc/histoXai/tcav/tcav")
-
-from tcav_results.results_pb2 import Result, Results
+sys.path.append("/home/hjcho/projects/hnsc/histoXai/tcav")
+from tcav.tcav_results.results_pb2 import Result, Results
 
 _KEYS = [
     "cav_key", "cav_concept", "negative_concept", "target_class", "i_up",

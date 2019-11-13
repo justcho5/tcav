@@ -18,7 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import sys
-sys.path.append("/Users/justina/Documents/EPFL/thesis/project/hnsc/histoXai/tcav/tcav")
+sys.path.append("/home/hjcho/projects/hnsc/histoXai/tcav")
 import os.path
 import pickle
 import numpy as np
@@ -26,7 +26,7 @@ from six.moves import range
 from sklearn import linear_model
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
-import utils
+import tcav.utils as utils
 import tensorflow as tf
 
 

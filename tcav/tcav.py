@@ -18,7 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import sys
-sys.path.append("/Users/justina/Documents/EPFL/thesis/project/hnsc/histoXai/tcav/tcav")
+sys.path.append("/home/hjcho/projects/hnsc/histoXai/tcav/tcav")
 from multiprocessing import dummy as multiprocessing
 from six.moves import range
 from cav import CAV
