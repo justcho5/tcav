@@ -249,8 +249,7 @@ class CustomImageModelWrapper(ImageModelWrapper):
                                                          endpoints_dict,
                                                          self.image_value_range,
                                                          scope=scope)
-        self.bottlenecks_tensors = CustomImageModelWrapper.get_bottleneck_tensors(
-            scope)
+        self.bottlenecks_tensors = self.get_bottleneck_tensors(scope)
         graph = tf.get_default_graph()
 
         # Construct gradient ops.
@@ -290,7 +289,7 @@ class CustomImageModelWrapper(ImageModelWrapper):
 
 
     # From Alex's code.
-    def get_bottleneck_tensors(scope):
+    def get_bottleneck_tensors(self, scope):
       """Add Inception bottlenecks and their pre-Relu versions to endpoints dict."""
       graph = tf.get_default_graph()
       bn_endpoints = {}
@@ -463,7 +462,7 @@ class InceptionV3Wrapper_public(CustomImageModelWrapper):
         super(InceptionV3Wrapper_public, self).__init__(sess, model_path, labels_path, image_shape, endpoints_v3, 'import')
 
 
-class XceptionHPVWrapper_public(ModelWrapper):
+class XceptionHPVWrapper_public(CustomImageModelWrapper):
     def __init__(self, sess, model_path, labels_path):
         image_shape = [598,598,3]
         self.model_name = 'XceptionHPV'
@@ -475,18 +474,19 @@ class XceptionHPVWrapper_public(ModelWrapper):
         prediction='dense_1/Softmax:0',
         logit_weight='dense/kernel:0',
         logit_bias='dense/bias:0')
-        super(InceptionV3Wrapper_public, self).__init__(sess, model_path, labels_path, image_shape, endpoints_xc, 'import')
-        self.bottlenecks_tensors=self.get_bottleneck_tensors('import')
+        super(XceptionHPVWrapper_public, self).__init__(sess, model_path, labels_path, image_shape, endpoints_xc, 'import')
 
-        def get_bottleneck_tensors(scope):
-          """Add Inception bottlenecks and their pre-Relu versions to endpoints dict."""
-          graph = tf.get_default_graph()
-          bn_endpoints = {}
-          for op in graph.get_operations():
-              if op.name.startswith(scope+'/') and 'Add' in op.type:
-                print(op.name)
-                print(op.values())
-                name = op.name.split('/')
+    def get_bottleneck_tensors(self, scope):
+      """Add Inception bottlenecks and their pre-Relu versions to endpoints dict."""
+      graph = tf.get_default_graph()
+      bn_endpoints = {}
+      print("HERE")
+      for op in graph.get_operations():
+          if op.name.startswith(scope+'/') and 'Add' in op.type:
+            name = op.name.split('/')
+            try:
                 key = "{}/{}".format(name[2],name[3])
-                bn_endpoints[key] = op.outputs[0]
-          return bn_endpoints
+            except:
+                continue
+            bn_endpoints[key] = op.outputs[0]
+      return bn_endpoints
