@@ -19,6 +19,8 @@ from __future__ import division
 from __future__ import print_function
 import sys
 sys.path.append("/home/hjcho/projects/hnsc/histoXai/tcav")
+sys.path.append("/Users/justina/Documents/EPFL/thesis/project/hnsc/histoXai/tcav")
+
 import os.path
 import pickle
 import numpy as np

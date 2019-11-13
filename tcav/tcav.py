@@ -19,10 +19,11 @@ from __future__ import division
 from __future__ import print_function
 import sys
 sys.path.append("/home/hjcho/projects/hnsc/histoXai/tcav/tcav")
+sys.path.append("/Users/justina/Documents/EPFL/thesis/project/hnsc/histoXai/tcav/tcav")
 from multiprocessing import dummy as multiprocessing
 from six.moves import range
-from cav import CAV
-from cav import get_or_train_cav
+from tcav.cav import CAV
+from tcav.cav import get_or_train_cav
 from tcav import run_params
 from tcav import utils
 import numpy as np
@@ -383,12 +384,15 @@ class TCAV(object):
     """
     params = []
     for bottleneck in self.bottlenecks:
-      for target_in_test, concepts_in_test in self.pairs_to_test:
-        for alpha in self.alphas:
-          tf.logging.info('%s %s %s %s', bottleneck, concepts_in_test,
-                          target_in_test, alpha)
-          params.append(
-              run_params.RunParams(bottleneck, concepts_in_test, target_in_test,
-                                   self.activation_generator, self.cav_dir,
-                                   alpha, self.mymodel))
+      try:
+        for target_in_test, concepts_in_test in self.pairs_to_test:
+          for alpha in self.alphas:
+            tf.logging.info('%s %s %s %s', bottleneck, concepts_in_test,
+                            target_in_test, alpha)
+            params.append(
+                run_params.RunParams(bottleneck, concepts_in_test, target_in_test,
+                                     self.activation_generator, self.cav_dir,
+                                     alpha, self.mymodel))
+      except:
+          continue
     return params

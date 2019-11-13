@@ -24,7 +24,7 @@ import tcav.utils as utils
 import os
 
 # helper function to output plot and write summary data
-def plot_results(results, output_file, random_counterpart=None, random_concepts=None, num_random_exp=100,
+def plot_results(results, output_fullpath, random_counterpart=None, random_concepts=None, num_random_exp=100,
     min_p_val=0.05):
   """Helper function to organize results.
   When run in a notebook, outputs a matplotlib bar plot of the
@@ -156,6 +156,5 @@ def plot_results(results, output_file, random_counterpart=None, random_concepts=
   ax.legend()
   fig.tight_layout()
   plt.show()
-  out = "/home/hjcho/projects/hnsc/histoXai/imagenet_small_test/results"
-  plt.savefig(os.path.join(out, output_file))
+  plt.savefig(output_fullpath)
   return plot_data

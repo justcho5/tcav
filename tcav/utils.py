@@ -19,6 +19,7 @@ import numpy as np
 import tensorflow as tf
 import sys
 sys.path.append("/home/hjcho/projects/hnsc/histoXai/tcav")
+sys.path.append("/Users/justina/Documents/EPFL/thesis/project/hnsc/histoXai/tcav")
 from tcav.tcav_results.results_pb2 import Result, Results
 
 _KEYS = [

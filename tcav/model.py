@@ -221,6 +221,7 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
     Returns:
       Activations in the given layer.
     """
+    print(self.bottlenecks_tensors)
     return self.sess.run(self.bottlenecks_tensors[bottleneck_name],
                          {self.ends['input']: examples})
 
@@ -240,6 +241,91 @@ class ImageModelWrapper(ModelWrapper):
 def _try_loading_model(self, model_path):
     return super(ModelWrapper)._try_loading_model(model_path)
 
+class CustomImageModelWrapper(ImageModelWrapper):
+    def __init__(self, sess, model_path, labels_path, image_shape, endpoints_dict, scope):
+        super(CustomImageModelWrapper, self).__init__(image_shape)
+        self.labels=tf.gfile.Open(labels_path).read().splitlines()
+        self.ends = CustomImageModelWrapper.import_graph(model_path,
+                                                         endpoints_dict,
+                                                         self.image_value_range,
+                                                         scope=scope)
+        self.bottlenecks_tensors = CustomImageModelWrapper.get_bottleneck_tensors(
+            scope)
+        graph = tf.get_default_graph()
+
+        # Construct gradient ops.
+        with graph.as_default():
+          self.y_input = tf.placeholder(tf.int64, shape=[None])
+
+          self.pred = tf.expand_dims(self.ends['prediction'][0], 0)
+          self.loss = tf.reduce_mean(
+              tf.nn.softmax_cross_entropy_with_logits(
+                  labels=tf.one_hot(
+                      self.y_input,
+                      self.ends['prediction'].get_shape().as_list()[1]),
+                  logits=self.pred))
+        self._make_gradient_tensors()
+
+    def id_to_label(self, idx):
+      return self.labels[idx]
+
+    def label_to_id(self, label):
+      return self.labels.index(label)
+
+    @staticmethod
+    def create_input(t_input, image_value_range):
+      """Create input tensor."""
+      def forget_xy(t):
+        """Forget sizes of dimensions [1, 2] of a 4d tensor."""
+        zero = tf.identity(0)
+        return t[:, zero:, zero:, :]
+
+      t_prep_input = t_input
+      if len(t_prep_input.shape) == 3:
+        t_prep_input = tf.expand_dims(t_prep_input, 0)
+      t_prep_input = forget_xy(t_prep_input)
+      lo, hi = image_value_range
+      t_prep_input = lo + t_prep_input * (hi-lo)
+      return t_input, t_prep_input
+
+
+    # From Alex's code.
+    def get_bottleneck_tensors(scope):
+      """Add Inception bottlenecks and their pre-Relu versions to endpoints dict."""
+      graph = tf.get_default_graph()
+      bn_endpoints = {}
+      for op in graph.get_operations():
+          if op.name.startswith(scope+'/') and 'Concat' in op.type:
+            name = op.name.split('/')[1]
+            bn_endpoints[name] = op.outputs[0]
+      return bn_endpoints
+
+
+    # Load graph and import into graph used by our session
+    @staticmethod
+    def import_graph(saved_path, endpoints, image_value_range, scope='import'):
+      t_input = tf.placeholder(np.float32, [None, None, None, 3])
+      graph = tf.Graph()
+      assert graph.unique_name(scope, False) == scope, (
+          'Scope "%s" already exists. Provide explicit scope names when '
+          'importing multiple instances of the model.') % scope
+
+
+      input_graph_def = tf.GraphDef()
+      with tf.gfile.FastGFile(saved_path, 'rb') as f:
+        graph_def = input_graph_def.ParseFromString(f.read())
+
+      with tf.name_scope(scope) as sc:
+        t_input, t_prep_input = CustomImageModelWrapper.create_input(
+            t_input, image_value_range)
+
+        graph_inputs = {}
+        graph_inputs[endpoints['input']] = t_prep_input
+        myendpoints = tf.import_graph_def(
+            input_graph_def, graph_inputs, list(endpoints.values()), name=sc)
+        myendpoints = dict(list(zip(list(endpoints.keys()), myendpoints)))
+        myendpoints['input'] = t_input
+      return myendpoints
 
 
 class PublicImageModelWrapper(ImageModelWrapper):
@@ -361,87 +447,46 @@ class GoolgeNetWrapper_public(PublicImageModelWrapper):
     # Following tfzoo convention.
     return pred_t[::16]
 
-# class InceptionV3Wrapper_public(PublicImageModelWrapper):
-#   def __init__(self, sess, model_saved_path, labels_path):
-#     self.image_value_range = (-1, 1)
-#     image_shape_v3 = [299, 299, 3]
-#     endpoints_v3 = dict(
-#         input='Mul:0',
-#         logit='softmax/logits:0',
-#         prediction='softmax:0',
-#         pre_avgpool='mixed_10/join:0',
-#         logit_weight='softmax/weights:0',
-#         logit_bias='softmax/biases:0',
-#     )
-#
-#     self.sess = sess
-#     super(InceptionV3Wrapper_public, self).__init__(sess,
-#                                                   model_saved_path,
-#                                                   labels_path,
-#                                                   image_shape_v3,
-#                                                   endpoints_v3,
-#                                                   scope='v3')
-#     self.model_name = 'InceptionV3_public'
 
-class InceptionV3Wrapper_public(ModelWrapper):
+class InceptionV3Wrapper_public(CustomImageModelWrapper):
     def __init__(self, sess, model_path, labels_path):
-        self.image_shape = [299,299,3]
-        self.model_name = 'InceptionV3_public'
-        super(InceptionV3Wrapper_public, self).__init__(model_path=model_path)
-
+        image_shape = [299,299,3]
         self.image_value_range = (-1,1)
+        self.model_name = 'InceptionV3_public'
         endpoints_v3 = dict(input='input_3:0',
         logit='predictions_2/BiasAdd:0',
         prediction='predictions_2/Softmax:0',
         pre_avgpool='mixed10_2/concat:0',
-        logit_weight='predictions_2/MatMul:0',
+        logit_weight='predictions_2/kernel:0',
         logit_bias='predictions_2/bias:0')
-
-        scope = 'import'
-        # graph = tf.get_default_graph()
-        bn_endpoints = {}
-        self.ends={}
-        for op in self.sess.graph.get_operations():
-            if op.name.startswith(scope+'/') and 'Concat' in op.type:
-              name = op.name.split('/')[1]
-              bn_endpoints[name] = op.outputs[0]
-        for k, v in endpoints_v3.items():
-            v="{}/{}".format(scope, v)
-            tensor = self.sess.graph.get_operation_by_name(v.strip(':0')).outputs[0]
-            if k == 'input' or k == 'prediction':
-                self.ends[k] = tensor
-
-        self.bottlenecks_tensors = bn_endpoints
-        graph = tf.get_default_graph()
-        with self.sess.graph.as_default():
-          self.y_input = tf.placeholder(tf.int64, shape=[None])
-
-          self.pred = tf.expand_dims(self.ends['prediction'][0], 0)
-          self.loss = tf.reduce_mean(
-              tf.nn.softmax_cross_entropy_with_logits(
-                  labels=tf.one_hot(
-                      self.y_input,
-                      self.ends['prediction'].get_shape().as_list()[1]),
-                  logits=self.pred))
-        self._make_gradient_tensors()
-        self.labels = tf.gfile.Open(labels_path).read().splitlines()
-    def get_image_shape(self):
-      """returns the shape of an input image."""
-      return self.image_shape
-    def id_to_label(self, idx):
-      return self.labels[idx]
-
-    def label_to_id(self, label):
-      return self.labels.index(label)
+        self.sess = sess
+        super(InceptionV3Wrapper_public, self).__init__(sess, model_path, labels_path, image_shape, endpoints_v3, 'import')
 
 
-    @staticmethod
-    def get_bottleneck_tensors(scope):
-      """Add Inception bottlenecks and their pre-Relu versions to endpoints dict."""
-      graph = tf.get_default_graph()
-      bn_endpoints = {}
-      for op in graph.get_operations():
-        if op.name.startswith(scope+'/') and 'Concat' in op.type:
-          name = op.name.split('/')[1]
-          bn_endpoints[name] = op.outputs[0]
-      return bn_endpoints
+class XceptionHPVWrapper_public(ModelWrapper):
+    def __init__(self, sess, model_path, labels_path):
+        image_shape = [598,598,3]
+        self.model_name = 'XceptionHPV'
+        self.sess=sess
+
+        self.image_value_range = (-1,1)
+        endpoints_xc = dict(input='xception_input:0',
+        logit='dense/Relu:0',
+        prediction='dense_1/Softmax:0',
+        logit_weight='dense/kernel:0',
+        logit_bias='dense/bias:0')
+        super(InceptionV3Wrapper_public, self).__init__(sess, model_path, labels_path, image_shape, endpoints_xc, 'import')
+        self.bottlenecks_tensors=self.get_bottleneck_tensors('import')
+
+        def get_bottleneck_tensors(scope):
+          """Add Inception bottlenecks and their pre-Relu versions to endpoints dict."""
+          graph = tf.get_default_graph()
+          bn_endpoints = {}
+          for op in graph.get_operations():
+              if op.name.startswith(scope+'/') and 'Add' in op.type:
+                print(op.name)
+                print(op.values())
+                name = op.name.split('/')
+                key = "{}/{}".format(name[2],name[3])
+                bn_endpoints[key] = op.outputs[0]
+          return bn_endpoints
