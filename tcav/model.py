@@ -485,7 +485,7 @@ class XceptionHPVWrapper_public(CustomImageModelWrapper):
           if op.name.startswith(scope+'/') and 'Add' in op.type:
             name = op.name.split('/')
             try:
-                key = "{}/{}".format(name[2],name[3])
+                key = "{}_{}".format(name[2],name[3])
             except:
                 continue
             bn_endpoints[key] = op.outputs[0]
