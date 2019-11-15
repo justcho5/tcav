@@ -221,7 +221,6 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
     Returns:
       Activations in the given layer.
     """
-    print(self.bottlenecks_tensors)
     return self.sess.run(self.bottlenecks_tensors[bottleneck_name],
                          {self.ends['input']: examples})
 
@@ -294,8 +293,6 @@ class CustomImageModelWrapper(ImageModelWrapper):
       graph = tf.get_default_graph()
       bn_endpoints = {}
       for op in graph.get_operations():
-          print(op.name)
-          print(op.values())
           if op.name.startswith(scope+'/') and 'Concat' in op.type:
             name = op.name.split('/')[1]
             bn_endpoints[name] = op.outputs[0]
@@ -322,8 +319,6 @@ class CustomImageModelWrapper(ImageModelWrapper):
 
         graph_inputs = {}
         graph_inputs[endpoints['input']] = t_prep_input
-        print(type(graph_inputs))
-        print(type(endpoints.values()))
         myendpoints = tf.import_graph_def(
             input_graph_def, graph_inputs, list(endpoints.values()), name=sc)
         myendpoints = dict(list(zip(list(endpoints.keys()), myendpoints)))
@@ -484,7 +479,6 @@ class XceptionHPVWrapper_public(CustomImageModelWrapper):
       """Add Inception bottlenecks and their pre-Relu versions to endpoints dict."""
       graph = tf.get_default_graph()
       bn_endpoints = {}
-      print("HERE")
       for op in graph.get_operations():
           if op.name.startswith(scope+'/') and 'Add' in op.type:
             name = op.name.split('/')
