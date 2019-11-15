@@ -53,7 +53,7 @@ class TCAVProj():
                            cav_dir=self.cav_dir,
                            num_random_exp=10)
         print ('This may take a while... Go get coffee!')
-        results = mytcav.run(run_parallel=False)
+        results = mytcav.run(run_parallel=True)
         print ('done!')
 
         # returns dictionary of plot data
@@ -62,17 +62,16 @@ def main():
     # project_dir = '/Users/justina/Documents/EPFL/thesis/projects/hnsc/histoXai/ace_small_test'
     # project_dir = '/Users/justina/Documents/EPFL/thesis/projects/hnsc/histoXai/imagenet_small_test'
     project_dir = '/home/hjcho/projects/hnsc/histoXai/imagenet_small_test'
-    model_to_run = 'GoogleNet'
-    bottlenecks = [ 'mixed4c', 'mixed3a', 'mixed3b', 'mixed4a','mixed4b','mixed5a','mixed5b']
-    # bottlenecks= ['mixed0_2', 'mixed1_2', 'mixed2_2','mixed3_2','mixed4_2','mixed5_2', 'mixed6_2','mixed7_2','mixed8_2','mixed9_3','mixed10_2']
+    model_to_run = 'InceptionV3'
+    # bottlenecks = [ 'mixed4c']
+    bottlenecks= ['mixed0_2', 'mixed1_2', 'mixed2_2','mixed3_2','mixed4_2','mixed5_2', 'mixed6_2','mixed7_2','mixed8_2','mixed9_3','mixed10_2']
     # bottlenecks=['add_11/add','add_10/add','add_9/add','add_8/add','add_7/add','add_6/add']
     # bottlenecks=['add_9/add']
     # bottlenecks=['mixed10_2']
     alphas = [0.1]
     target = 'zebra'
     concepts = ["dotted","striped","zigzagged"]
-    GRAPH_PATH=os.path.join(project_dir, "graphs/tensorflow_inception_graph.pb")
-    # GRAPH_PATH=os.path.join(project_dir,"graphs/inceptionv3.pb")
+    GRAPH_PATH=os.path.join(project_dir,"graphs/inceptionv3.pb")
     # LABEL_PATH = os.path.join(project_dir, "graphs/labels.txt")
     LABEL_PATH = os.path.join(project_dir, "graphs/imagenet_comp_graph_label_strings.txt")
 

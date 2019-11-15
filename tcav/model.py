@@ -294,6 +294,8 @@ class CustomImageModelWrapper(ImageModelWrapper):
       graph = tf.get_default_graph()
       bn_endpoints = {}
       for op in graph.get_operations():
+          print(op.name)
+          print(op.values())
           if op.name.startswith(scope+'/') and 'Concat' in op.type:
             name = op.name.split('/')[1]
             bn_endpoints[name] = op.outputs[0]
@@ -313,19 +315,17 @@ class CustomImageModelWrapper(ImageModelWrapper):
       input_graph_def = tf.GraphDef()
       with tf.gfile.FastGFile(saved_path, 'rb') as f:
         graph_def = input_graph_def.ParseFromString(f.read())
-
+      graph = tf.get_default_graph()
       with tf.name_scope(scope) as sc:
         t_input, t_prep_input = CustomImageModelWrapper.create_input(
             t_input, image_value_range)
 
         graph_inputs = {}
         graph_inputs[endpoints['input']] = t_prep_input
-        "BEFORE"
-        print(graph_inputs)
-        print(list(endpoints.values()))
+        print(type(graph_inputs))
+        print(type(endpoints.values()))
         myendpoints = tf.import_graph_def(
             input_graph_def, graph_inputs, list(endpoints.values()), name=sc)
-        "AFTER"
         myendpoints = dict(list(zip(list(endpoints.keys()), myendpoints)))
         myendpoints['input'] = t_input
       return myendpoints
