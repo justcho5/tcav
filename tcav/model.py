@@ -224,6 +224,7 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
     """
     result = []
     batch_size = 16
+    num_steps=math.ceil(examples.shape[0]/batch_size)
     for step in range(num_steps):
 
     # Pick an offset within the training data, which has been randomized.
@@ -231,7 +232,7 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
         offset = (step * batch_size) % (examples.shape[0] - batch_size)
 
     # Generate a minibatch.
-        batch_data = train_dataset[offset:(offset + batch_size), :]
+        batch_data = examples[offset:(offset + batch_size), :]
 
     # Prepare a dictionary telling the session where to feed the minibatch.
     # The key of the dictionary is the placeholder node of the graph to be fed,
