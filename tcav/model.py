@@ -222,25 +222,10 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
     Returns:
       Activations in the given layer.
     """
-    result = []
-    batch_size = 16
-    num_steps=math.ceil(examples.shape[0]/batch_size)
-    for step in range(num_steps):
 
-    # Pick an offset within the training data, which has been randomized.
-    # Note: we could use better randomization across epochs.
-        offset = (step * batch_size) % (examples.shape[0] - batch_size)
+    feed_dict = {self.ends['input'] : examples}
 
-    # Generate a minibatch.
-        batch_data = examples[offset:(offset + batch_size), :]
-
-    # Prepare a dictionary telling the session where to feed the minibatch.
-    # The key of the dictionary is the placeholder node of the graph to be fed,
-    # and the value is the numpy array to feed to it.
-        feed_dict = {self.ends['input'] : batch_data}
-        b = self.sess.run(self.bottlenecks_tensors[bottleneck_name],feed_dict)
-        result.append(b)
-    return result
+    return self.sess.run(self.bottlenecks_tensors[bottleneck_name],feed_dict)
 
 
 class ImageModelWrapper(ModelWrapper):
