@@ -24,6 +24,7 @@ import numpy as np
 import six
 import tensorflow as tf
 from google.protobuf import text_format
+import math
 
 class ModelWrapper(six.with_metaclass(ABCMeta, object)):
   """Simple wrapper of the for models with session object for TCAV.
@@ -221,8 +222,24 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
     Returns:
       Activations in the given layer.
     """
-    return self.sess.run(self.bottlenecks_tensors[bottleneck_name],
-                         {self.ends['input']: examples})
+    result = []
+    batch_size = 16
+    for step in range(num_steps):
+
+    # Pick an offset within the training data, which has been randomized.
+    # Note: we could use better randomization across epochs.
+        offset = (step * batch_size) % (examples.shape[0] - batch_size)
+
+    # Generate a minibatch.
+        batch_data = train_dataset[offset:(offset + batch_size), :]
+
+    # Prepare a dictionary telling the session where to feed the minibatch.
+    # The key of the dictionary is the placeholder node of the graph to be fed,
+    # and the value is the numpy array to feed to it.
+        feed_dict = {self.ends['input'] : batch_data}
+        b = self.sess.run(self.bottlenecks_tensors[bottleneck_name],feed_dict)
+        result.append(b)
+    return result
 
 
 class ImageModelWrapper(ModelWrapper):
